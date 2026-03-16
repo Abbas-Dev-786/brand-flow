@@ -7,8 +7,8 @@ from tools.knowledge_base import fetch_brand_knowledge
 
 logger = logging.getLogger(__name__)
 
-# Model configuration
-MODEL = "openai-gpt-4o" # or another available OpenAI model on Gradient
+# Model configuration - using verified Llama 3 model from the DO API list
+MODEL = "llama3-8b-instruct" 
 
 def get_model(temperature: float = 0.0) -> ChatGradient:
     """Get a ChatGradient instance."""
@@ -33,7 +33,7 @@ def extract_brand_dna(kb_id: str) -> BrandDNA:
     # Bind the tool to the LLM so it can dynamically fetch context
     model_with_tools = model.bind_tools([fetch_brand_knowledge])
 
-    query = f"Read all available content for the knowledge base with ID '{kb_id}' using the fetch_brand_knowledge tool. Extract the brand's tone, target audience, values, key messages, and proof points. Look for visual style hints like colors or mood if any."
+    query = f"Search the knowledge base with UUID '{kb_id}' for brand information including tone, audience, values, messages, and visual style."
 
     try:
         messages = [
@@ -43,12 +43,15 @@ def extract_brand_dna(kb_id: str) -> BrandDNA:
 
         # Invoke the model which should return a tool call
         response = model_with_tools.invoke(messages)
+        logger.info(f"[BrandStrategistAgent] LLM Response: {response.content}")
+        logger.info(f"[BrandStrategistAgent] Tool Calls: {response.tool_calls}")
         messages.append(response)
 
         # Handle the tool call dynamically
         for tool_call in response.tool_calls:
             if tool_call["name"] == "fetch_brand_knowledge":
                 tool_result = fetch_brand_knowledge.invoke(tool_call["args"])
+                # Ensure we pass the ID correctly
                 messages.append({
                     "role": "tool",
                     "name": "fetch_brand_knowledge",
@@ -63,12 +66,19 @@ def extract_brand_dna(kb_id: str) -> BrandDNA:
             final_response = structured_model.invoke(messages)
             return final_response
         else:
-            # If no tools were called, maybe it just responded or hallucinated
-            logger.warning("[BrandStrategistAgent] No tool calls made. Falling back to structured output parse.")
+            # If no tools were called, it might be the model's first step.
+            # We will force a tool call by explicitly providing the schema instructions.
+            logger.warning(f"[BrandStrategistAgent] No tool calls made. Response content: {response.content}")
+            
+            # Manual Fallback: Just call the tool directly if we have a KB ID
+            # This ensures we get context even if the LLM is being stubborn today
+            logger.info(f"[BrandStrategistAgent] Manually invoking fetch_brand_knowledge for KB: {kb_id}")
+            tool_result = fetch_brand_knowledge.invoke({"uuid": kb_id})
+            
             structured_model = model.with_structured_output(BrandDNA)
             return structured_model.invoke([
                 SystemMessage(content=STRATEGIST_SYSTEM_PROMPT),
-                HumanMessage(content=f"No context was requested, but extract Brand DNA for KB: {kb_id}")
+                HumanMessage(content=f"Based on the following context, extract the Brand DNA:\n\n{tool_result}")
             ])
 
     except Exception as e:

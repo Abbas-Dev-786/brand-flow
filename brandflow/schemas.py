@@ -87,3 +87,8 @@ class CampaignPack(BaseModel):
     email: EmailCopy
     image_prompts: List[str]
     primary_image_prompt: str
+
+class ReviewResult(BaseModel):
+    """Feedback from the Creative Director reviewing the team's output."""
+    is_approved: bool = Field(description="Whether the copy and visuals are approved.")
+    feedback: str = Field(description="Constructive feedback if not approved, or praise if approved.")

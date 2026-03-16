@@ -6,7 +6,7 @@ from prompts import VISUAL_DESIGNER_SYSTEM_PROMPT
 logger = logging.getLogger(__name__)
 
 # Model configuration
-MODEL = "openai-gpt-4o"
+MODEL = "llama3-8b-instruct"
 
 def get_model(temperature: float = 0.7) -> ChatGradient:
     """Get a ChatGradient instance."""

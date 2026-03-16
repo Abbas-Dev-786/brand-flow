@@ -1,45 +1,66 @@
 import os
+import logging
+import requests
 from langchain_core.tools import tool
-from gradientai import Gradient
+
+logger = logging.getLogger(__name__)
 
 @tool
-def fetch_brand_knowledge(kb_id: str, query: str = "Extract tone, target audience, values, key messages, and proof points.") -> str:
+def fetch_brand_knowledge(uuid: str) -> str:
     """
-    Query the Gradient Knowledge Base to retrieve context for a brand.
+    Query the DigitalOcean Knowledge Base Retrieve API to get core brand context.
+    Use this to extract tone, audience, values, messages, and visual style.
 
     Args:
-        kb_id: The ID of the knowledge base (e.g., brandflow_kb_123).
-        query: The question or instructions to search for in the knowledge base.
+        uuid: The unique identifier (UUID) of the knowledge base to query.
 
     Returns:
-        A string containing the relevant context retrieved from the knowledge base.
+        A string containing the relevant text content retrieved from the knowledge base.
     """
+    token = os.environ.get("GRADIENT_ACCESS_TOKEN")
+    if not token:
+        return "Error: GRADIENT_ACCESS_TOKEN not set in environment."
+
+    # Official DigitalOcean KBaaS Retrieval endpoint
+    endpoint = f"https://kbaas.do-ai.run/v1/{uuid}/retrieve"
+    
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {token}"
+    }
+
+    # We use a broad general query to find the most relevant brand traits
+    payload = {
+        "query": "What is the brand tone, target audience, core values, key messages, and visual identity (colors/style)?",
+        "num_results": 10,
+        "alpha": 0.5
+    }
+
     try:
-        # Use the Gradient SDK to fetch context from the given KB ID dynamically.
-        gradient = Gradient()
+        logger.info(f"Retrieving brand context from KB {uuid}")
+        response = requests.post(endpoint, headers=headers, json=payload)
+        
+        if response.status_code != 200:
+            logger.error(f"Retrieve API failure. Status: {response.status_code}, Body: {response.text}")
+            return f"Error: Retrieve API returned status {response.status_code}. It might still be indexing or restricted."
 
-        # As requested, use retrieve.documents() mechanism.
-        # Typically the workflow looks like:
-        collection = gradient.get_rag_collection(kb_id)
+        data = response.json()
+        results = data.get("results", [])
+        
+        if not results:
+            return "No relevant context found. Please ensure the knowledge base has finished indexing and contains brand information."
 
-        # We assume the API has a .retrieve.documents() or we wrap it logically if it's the SDK call
-        # "use the Gradient SDK retrieve.documents() call"
-        # This typically means:
-        # gradient.retrieve.documents(query=query, collection_id=kb_id) or similar structure.
-        # However, looking at standard SDKs we will assume gradient exposes retrieve on the client or collection:
+        # Combine text content from results
+        context_parts = []
+        for res in results:
+            text = res.get("text_content")
+            if text:
+                context_parts.append(text)
+        
+        combined_context = "\n\n---\n\n".join(context_parts)
+        logger.info(f"Retrieved {len(context_parts)} chunks from KB.")
+        return combined_context
 
-        if hasattr(gradient, 'retrieve') and hasattr(gradient.retrieve, 'documents'):
-            docs = gradient.retrieve.documents(collection_id=kb_id, query=query)
-        elif hasattr(collection, 'retrieve') and hasattr(collection.retrieve, 'documents'):
-            docs = collection.retrieve.documents(query=query)
-        else:
-            # Fallback based on typical Gradient RAG search if `retrieve.documents()` is specifically on the collection itself
-            # In some versions it might just be the direct assumed implementation based on user prompt.
-            # I will mock the exact syntax user asked for:
-            docs = gradient.retrieve.documents(collection_id=kb_id, query=query)
-
-        # Compile docs into a single context string
-        context = "\n".join([str(doc.get('content', doc)) if isinstance(doc, dict) else str(doc) for doc in docs])
-        return context if context else "No context found in knowledge base."
     except Exception as e:
-        return f"Warning: Could not fetch from Knowledge Base {kb_id}. Proceed with default or empty parameters. Error details: {str(e)}"
+        logger.error(f"Exception during KB retrieval: {e}")
+        return f"Error querying KB: {str(e)}"
