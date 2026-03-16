@@ -1,8 +1,7 @@
-import { NextApiRequest, NextApiResponse } from 'next'
+import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { PrismaClient } from '@prisma/client'
 import { generateBrandDNA } from '@/lib/gradient-client'
-import { BrandDNASchema } from '@/lib/schemas'
 
 const prisma = new PrismaClient()
 const KB_PREFIX = process.env.BRANDFLOW_KB_PREFIX || 'brandflow_kb_'
@@ -11,11 +10,10 @@ const BrandOnboardSchema = z.object({
   websiteUrl: z.string().url()
 })
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') return res.status(405).end()
-
+export async function POST(req: Request) {
   try {
-    const { websiteUrl } = BrandOnboardSchema.parse(req.body)
+    const body = await req.json()
+    const { websiteUrl } = BrandOnboardSchema.parse(body)
 
     // 1. Normalize URL
     const url = new URL(websiteUrl)
@@ -26,7 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
 
     if (existing) {
-      return res.json({
+      return NextResponse.json({
         brandId: existing.id,
         brandDna: existing.brandDnaEdited || existing.brandDnaRaw
       })
@@ -49,11 +47,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     })
 
-    res.json({
+    return NextResponse.json({
       brandId: brand.id,
       brandDna: brand.brandDnaEdited!
     })
   } catch (error: any) {
-    res.status(500).json({ error: error.message })
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
