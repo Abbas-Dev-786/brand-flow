@@ -1,0 +1,3 @@
+agent_environment: brandflow
+agent_name: brandflow
+entrypoint_file: main.py

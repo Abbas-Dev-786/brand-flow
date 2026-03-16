@@ -1,7 +1,7 @@
 import logging
 from langchain_gradient import ChatGradient
-from ..schemas import BrandDNA, CampaignInput, VisualBlock
-from ..prompts import VISUAL_DESIGNER_SYSTEM_PROMPT
+from schemas import BrandDNA, CampaignInput, VisualBlock
+from prompts import VISUAL_DESIGNER_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 

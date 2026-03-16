@@ -1,9 +1,9 @@
 import logging
 from langchain_gradient import ChatGradient
 from langchain_core.messages import SystemMessage, HumanMessage
-from ..schemas import BrandDNA
-from ..prompts import STRATEGIST_SYSTEM_PROMPT
-from ..tools.knowledge_base import fetch_brand_knowledge
+from schemas import BrandDNA
+from prompts import STRATEGIST_SYSTEM_PROMPT
+from tools.knowledge_base import fetch_brand_knowledge
 
 logger = logging.getLogger(__name__)
 

@@ -8,11 +8,11 @@ from langchain_gradient import ChatGradient
 from langchain_core.messages import SystemMessage, HumanMessage
 
 # Import schemas
-from .schemas import BrandDNA, CampaignInput, CampaignPack, CopyBlock, VisualBlock
-from .agents.copywriter import generate_campaign_copy
-from .agents.visual_designer import generate_image_prompts
-from .agents.strategist import extract_brand_dna
-from .prompts import CREATIVE_DIRECTOR_SYSTEM_PROMPT
+from schemas import BrandDNA, CampaignInput, CampaignPack, CopyBlock, VisualBlock
+from agents.copywriter import generate_campaign_copy
+from agents.visual_designer import generate_image_prompts
+from agents.strategist import extract_brand_dna
+from prompts import CREATIVE_DIRECTOR_SYSTEM_PROMPT
 from gradient_adk import entrypoint
 
 # Setup logging
@@ -182,11 +182,11 @@ def ingest_website(input_data: dict) -> dict:
 
     try:
         # Step 1: Scrape website text content
-        from .tools.scraper import scrape_website_content
+        from tools.scraper import scrape_website_content
         text_content = scrape_website_content(url)
 
         # Step 2: Ingest text to Gradient Knowledge Base
-        from .tools.ingestor import create_knowledge_base_from_text
+        from tools.ingestor import create_knowledge_base_from_text
         kb_name = f"brandflow-kb-{url.split('//')[-1].replace('/', '-')}"
         kb_id = create_knowledge_base_from_text(kb_name, text_content)
 
