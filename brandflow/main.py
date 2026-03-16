@@ -253,13 +253,41 @@ def generate_brand_dna(input_data: dict, context) -> dict:
     Args:
         input_data: Dictionary containing:
             - kb_id (str): The ID of the knowledge base
+            - wait_for_indexing (bool): Whether to poll until indexing is complete (default True)
         context: Gradient deployment context
     """
     kb_id = input_data.get("kb_id")
+    wait_for_indexing = input_data.get("wait_for_indexing", True)
+    
     if not kb_id:
         return {"error": "kb_id is required"}
 
     try:
+        if wait_for_indexing:
+            logger.info(f"Waiting for KB {kb_id} to be indexed...")
+            from tools.ingestor import get_knowledge_base_status
+            import time
+            
+            max_retries = 30 # 5 minutes
+            for i in range(max_retries):
+                status_data = get_knowledge_base_status(kb_id)
+                last_job = status_data.get("last_indexing_job", {})
+                phase = last_job.get("phase", "")
+                status = last_job.get("status", "")
+                
+                logger.info(f"Polling KB status ({i+1}/{max_retries}): Phase={phase}, Status={status}")
+                
+                if phase == "BATCH_JOB_PHASE_SUCCEEDED" or status == "INDEX_JOB_STATUS_COMPLETED":
+                    logger.info("Indexing complete!")
+                    break
+                
+                if phase in ["BATCH_JOB_PHASE_FAILED", "BATCH_JOB_PHASE_CANCELED"]:
+                    return {"error": f"Indexing failed with phase: {phase}"}
+                
+                time.sleep(10)
+            else:
+                logger.warning("Indexing timed out, attempting extraction anyway.")
+
         brand_dna = extract_brand_dna(kb_id)
         return brand_dna.model_dump()
     except Exception as e:

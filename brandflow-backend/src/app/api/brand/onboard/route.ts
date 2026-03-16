@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { PrismaClient } from '@prisma/client'
-import { generateBrandDNA } from '@/lib/gradient-client'
+import { generateBrandDNA, ingestWebsite } from '@/lib/gradient-client'
 
 const prisma = new PrismaClient()
 const KB_PREFIX = process.env.BRANDFLOW_KB_PREFIX || 'brandflow_kb_'
@@ -30,9 +30,11 @@ export async function POST(req: Request) {
       })
     }
 
-    // 3. TODO: Create Gradient KB and ingest website content
-    // For now, generate kbId
-    const kbId = `${KB_PREFIX}${crypto.randomUUID()}`
+    // 3. Create Gradient KB and ingest website content
+    const { kb_id: kbId } = await ingestWebsite(url.href)
+
+    // Give the crawler a few seconds to start indexing
+    await new Promise(resolve => setTimeout(resolve, 5000))
 
     // 4. Generate BrandDNA from KB
     const brandDna = await generateBrandDNA(kbId)
