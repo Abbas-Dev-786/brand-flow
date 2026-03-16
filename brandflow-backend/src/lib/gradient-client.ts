@@ -1,4 +1,4 @@
-import { BrandDNA, BrandDNASchema, CampaignInput, CampaignPack, CampaignPackSchema } from './schemas'
+import { BrandDNA, CampaignInput, CampaignPack, ApiBrandDNASchema, ApiCampaignPackSchema } from './schemas'
 
 const GRADIENT_BASE_URL = process.env.GRADIENT_BASE_URL!
 const GRADIENT_API_KEY = process.env.GRADIENT_API_KEY!
@@ -21,14 +21,32 @@ async function gradientPost(endpoint: string, body: any) {
 }
 
 export async function generateBrandDNA(kbId: string): Promise<BrandDNA> {
-  const result = await gradientPost('brand-dna', { kbId })
-  return BrandDNASchema.parse(result)
+  const result = await gradientPost('brand-dna', { kb_id: kbId })
+  return ApiBrandDNASchema.parse(result)
 }
 
 export async function generateCampaignPack(params: {
   brandDna: BrandDNA
   campaign: CampaignInput
 }): Promise<CampaignPack> {
-  const result = await gradientPost('campaign-pack', params)
-  return CampaignPackSchema.parse(result)
+  // Map camelCase TS inputs to snake_case Python inputs
+  const payload = {
+    brand_dna: {
+      tone: params.brandDna.tone,
+      target_audience: params.brandDna.targetAudience,
+      values: params.brandDna.values,
+      key_messages: params.brandDna.keyMessages,
+      proof_points: params.brandDna.proofPoints,
+      visual_style: params.brandDna.visualStyle || []
+    },
+    campaign: {
+      goal: params.campaign.goal,
+      offer: params.campaign.offer,
+      audience: params.campaign.audience,
+      channel_preferences: params.campaign.channelPreferences || []
+    }
+  }
+
+  const result = await gradientPost('campaign-pack', payload)
+  return ApiCampaignPackSchema.parse(result)
 }
