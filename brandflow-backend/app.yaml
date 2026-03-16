@@ -1,0 +1,24 @@
+name: brandflow-backend
+services:
+- name: api
+  github:
+    repo: yourusername/brandflow-backend
+    branch: main
+  run_command: npm run start
+  environment_slug: node-js
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  http_port: 3000
+  envs:
+  - key: DO_DB_URL
+    scope: RUN_AND_BUILD_TIME
+    value: $DO_DB_URL
+  - key: GRADIENT_BASE_URL
+    scope: RUN_AND_BUILD_TIME
+    value: $GRADIENT_BASE_URL
+  - key: GRADIENT_API_KEY
+    scope: RUN_AND_BUILD_TIME
+    value: $GRADIENT_API_KEY
+  - key: BRANDFLOW_KB_PREFIX
+    scope: RUN_AND_BUILD_TIME
+    value: $BRANDFLOW_KB_PREFIX

@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DO_DB_URL")
+}
+
+model Brand {
+  id              String   @id @default(uuid())
+  websiteUrl      String   @unique
+  kbId            String   @unique
+  brandDnaRaw     Json
+  brandDnaEdited  Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  campaigns       Campaign[]
+}
+
+model Campaign {
+  id              String   @id @default(uuid())
+  brandId         String
+  goal            String
+  offer           String
+  audience        String?
+  channelPrefs    Json?
+  campaignPack    Json
+  createdAt       DateTime @default(now())
+
+  brand           Brand    @relation(fields: [brandId], references: [id])
+}
