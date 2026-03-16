@@ -165,6 +165,42 @@ creative_director_app = create_orchestrator_graph()
 # =============================================================================
 
 @entrypoint
+def ingest_website(input_data: dict) -> dict:
+    """
+    Endpoint for POST /gradient/brandflow/ingest-website
+
+    Args:
+        input_data: Dictionary containing:
+            - url (str): The website URL to scrape.
+
+    Returns:
+        JSON with the new `kb_id`.
+    """
+    url = input_data.get("url")
+    if not url:
+        return {"error": "url is required"}
+
+    try:
+        # Step 1: Scrape website text content
+        from .tools.scraper import scrape_website_content
+        text_content = scrape_website_content(url)
+
+        # Step 2: Ingest text to Gradient Knowledge Base
+        from .tools.ingestor import create_knowledge_base_from_text
+        kb_name = f"brandflow-kb-{url.split('//')[-1].replace('/', '-')}"
+        kb_id = create_knowledge_base_from_text(kb_name, text_content)
+
+        return {
+            "success": True,
+            "kb_id": kb_id,
+            "message": f"Successfully ingested {url} into KB {kb_id}"
+        }
+    except Exception as e:
+        logger.error(f"Error ingesting website: {e}")
+        return {"error": str(e)}
+
+
+@entrypoint
 def generate_brand_dna(input_data: dict) -> dict:
     """
     Endpoint for POST /gradient/brandflow/brand-dna
