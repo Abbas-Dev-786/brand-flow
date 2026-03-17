@@ -91,7 +91,7 @@ def get_knowledge_base_status(kb_id: str) -> dict:
         response = requests.get(endpoint, headers=headers)
         if response.status_code != 200:
             logger.error(f"Failed to get KB status. Status: {response.status_code}, Body: {response.text}")
-            return {"error": f"API Error: {response.status_code}"}
+            return {"error": f"API Error: {response.status_code}", "details": response.text}
         
         return response.json().get("knowledge_base", {})
     except Exception as e:

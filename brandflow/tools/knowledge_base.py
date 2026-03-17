@@ -29,6 +29,8 @@ def fetch_brand_knowledge(uuid: str) -> str:
         "Authorization": f"Bearer {token}"
     }
 
+    import time
+    
     # We use a broad general query to find the most relevant brand traits
     payload = {
         "query": "What is the brand tone, target audience, core values, key messages, and visual identity (colors/style)?",
@@ -36,31 +38,51 @@ def fetch_brand_knowledge(uuid: str) -> str:
         "alpha": 0.5
     }
 
-    try:
-        logger.info(f"Retrieving brand context from KB {uuid}")
-        response = requests.post(endpoint, headers=headers, json=payload)
-        
-        if response.status_code != 200:
-            logger.error(f"Retrieve API failure. Status: {response.status_code}, Body: {response.text}")
-            return f"Error: Retrieve API returned status {response.status_code}. It might still be indexing or restricted."
+    max_retries = 3
+    retry_delay = 5  # Initial delay in seconds
 
-        data = response.json()
-        results = data.get("results", [])
-        
-        if not results:
-            return "No relevant context found. Please ensure the knowledge base has finished indexing and contains brand information."
+    for attempt in range(max_retries + 1):
+        try:
+            logger.info(f"Retrieving brand context from KB {uuid} (Attempt {attempt + 1}/{max_retries + 1})")
+            response = requests.post(endpoint, headers=headers, json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                results = data.get("results", [])
+                
+                if not results:
+                    return "No relevant context found. Please ensure the knowledge base has finished indexing and contains brand information."
 
-        # Combine text content from results
-        context_parts = []
-        for res in results:
-            text = res.get("text_content")
-            if text:
-                context_parts.append(text)
-        
-        combined_context = "\n\n---\n\n".join(context_parts)
-        logger.info(f"Retrieved {len(context_parts)} chunks from KB.")
-        return combined_context
+                # Combine text content from results
+                context_parts = []
+                for res in results:
+                    text = res.get("text_content")
+                    if text:
+                        context_parts.append(text)
+                
+                combined_context = "\n\n---\n\n".join(context_parts)
+                logger.info(f"Retrieved {len(context_parts)} chunks from KB.")
+                return combined_context
+            
+            elif response.status_code == 404:
+                # 404 often means the KB is still propagating to the retrieval service
+                if attempt < max_retries:
+                    logger.warning(f"KB {uuid} not found by retrieval service (404). Retrying in {retry_delay}s...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                    continue
+                else:
+                    logger.error(f"Retrieve API failure (Permanent 404). Body: {response.text}")
+                    return f"Error: Knowledge Base not found or not yet available for retrieval (Status 404)."
+            
+            else:
+                logger.error(f"Retrieve API failure. Status: {response.status_code}, Body: {response.text}")
+                return f"Error: Retrieve API returned status {response.status_code}."
 
-    except Exception as e:
-        logger.error(f"Exception during KB retrieval: {e}")
-        return f"Error querying KB: {str(e)}"
+        except Exception as e:
+            logger.error(f"Exception during KB retrieval: {e}")
+            if attempt < max_retries:
+                time.sleep(retry_delay)
+                retry_delay *= 2
+                continue
+            return f"Error querying KB: {str(e)}"

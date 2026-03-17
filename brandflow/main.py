@@ -268,10 +268,23 @@ def generate_brand_dna(input_data: dict, context) -> dict:
             from tools.ingestor import get_knowledge_base_status
             import time
             
-            max_retries = 30 # 5 minutes
+            max_retries = 60 # 10 minutes (60 * 10s)
             for i in range(max_retries):
                 status_data = get_knowledge_base_status(kb_id)
-                last_job = status_data.get("last_indexing_job", {})
+                
+                # Check for API error in status_data
+                if "error" in status_data:
+                    logger.warning(f"Polling KB status ({i+1}/{max_retries}): API Error - {status_data['error']}")
+                    time.sleep(10)
+                    continue
+
+                last_job = status_data.get("last_indexing_job")
+                
+                if not last_job:
+                    logger.info(f"Polling KB status ({i+1}/{max_retries}): No indexing job found yet. Waiting...")
+                    time.sleep(10)
+                    continue
+
                 phase = last_job.get("phase", "")
                 status = last_job.get("status", "")
                 
@@ -279,14 +292,16 @@ def generate_brand_dna(input_data: dict, context) -> dict:
                 
                 if phase == "BATCH_JOB_PHASE_SUCCEEDED" or status == "INDEX_JOB_STATUS_COMPLETED":
                     logger.info("Indexing complete!")
+                    # Add a small buffer for propagation to the retrieval service
+                    time.sleep(5)
                     break
                 
                 if phase in ["BATCH_JOB_PHASE_FAILED", "BATCH_JOB_PHASE_CANCELED"]:
-                    return {"error": f"Indexing failed with phase: {phase}"}
+                    return {"error": f"Indexing failed with phase: {phase}. Check DigitalOcean dashboard for details."}
                 
                 time.sleep(10)
             else:
-                logger.warning("Indexing timed out, attempting extraction anyway.")
+                logger.warning("Indexing timed out (10 mins), attempting extraction anyway. Results might be incomplete.")
 
         brand_dna = extract_brand_dna(kb_id)
         return brand_dna.model_dump()
