@@ -100,9 +100,14 @@ def generate_actual_image(prompt: str) -> Optional[str]:
         logger.error(f"[VisualDesignerAgent] Image generation failed: {e}")
         return None
 
-def generate_image_prompts(brand_dna: BrandDNA, campaign: CampaignInput) -> VisualBlock:
+def generate_image_prompts(brand_dna: BrandDNA, campaign: CampaignInput, feedback: Optional[str] = None) -> VisualBlock:
     """
     Propose image prompts and generate the primary image.
+
+    Args:
+        brand_dna: The BrandDNA object
+        campaign: The CampaignInput describing goal, offer, etc.
+        feedback: Optional feedback from the Creative Director for refactoring.
     """
     logger.info(f"[VisualDesignerAgent] Generating image prompts for campaign: {campaign.goal}")
 
@@ -122,6 +127,9 @@ def generate_image_prompts(brand_dna: BrandDNA, campaign: CampaignInput) -> Visu
     - Goal: {campaign.goal}
     - Offer: {campaign.offer}
     """
+
+    if feedback:
+        prompt_content += f"\n\nREFINE BASED ON FEEDBACK:\n{feedback}"
 
     try:
         visual_block = structured_model.invoke([

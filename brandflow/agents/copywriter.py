@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 from langchain_gradient import ChatGradient
 from schemas import BrandDNA, CampaignInput, CopyBlock
 from prompts import COPYWRITER_SYSTEM_PROMPT
@@ -15,13 +16,14 @@ def get_model(temperature: float = 0.5) -> ChatGradient:
         temperature=temperature
     )
 
-def generate_campaign_copy(brand_dna: BrandDNA, campaign: CampaignInput) -> CopyBlock:
+def generate_campaign_copy(brand_dna: BrandDNA, campaign: CampaignInput, feedback: Optional[str] = None) -> CopyBlock:
     """
     Generate channel-specific copy that strictly follows the given Brand DNA.
 
     Args:
         brand_dna: The BrandDNA object
         campaign: The CampaignInput describing goal, offer, etc.
+        feedback: Optional feedback from the Creative Director for refactoring.
 
     Returns:
         CopyBlock containing posts for X, LinkedIn, and an Email.
@@ -47,6 +49,9 @@ def generate_campaign_copy(brand_dna: BrandDNA, campaign: CampaignInput) -> Copy
     - Offer: {campaign.offer}
     - Channel Preferences: {', '.join(campaign.channel_preferences) if campaign.channel_preferences else 'All standard channels'}
     """
+
+    if feedback:
+        prompt_content += f"\n\nREFINE BASED ON FEEDBACK:\n{feedback}"
 
     try:
         copy_block = structured_model.invoke([

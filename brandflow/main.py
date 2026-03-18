@@ -62,8 +62,9 @@ def creative_director_copywriter_node(state: BrandFlowState) -> BrandFlowState:
     try:
         brand_dna = BrandDNA(**brand_dna_data)
         campaign = CampaignInput(**campaign_data)
+        review_feedback = state.get("review_feedback")
 
-        copy_block = generate_campaign_copy(brand_dna, campaign)
+        copy_block = generate_campaign_copy(brand_dna, campaign, feedback=review_feedback)
 
         return {
             "copy_block": copy_block.model_dump()
@@ -83,8 +84,9 @@ def creative_director_visual_designer_node(state: BrandFlowState) -> BrandFlowSt
     try:
         brand_dna = BrandDNA(**brand_dna_data)
         campaign = CampaignInput(**campaign_data)
+        review_feedback = state.get("review_feedback")
 
-        visual_block = generate_image_prompts(brand_dna, campaign)
+        visual_block = generate_image_prompts(brand_dna, campaign, feedback=review_feedback)
 
         return {
             "visual_block": visual_block.model_dump(),
@@ -186,6 +188,13 @@ def creative_director_reviewer_node(state: BrandFlowState) -> BrandFlowState:
         logger.error(f"[CreativeDirector] Review failed: {e}")
         return {"error": str(e)}
 
+def should_continue(state: BrandFlowState):
+    """Determine whether to continue refining or assemble the final pack."""
+    feedback = state.get("review_feedback", "")
+    if feedback == "Approved":
+        return "approved"
+    return "refine"
+
 # =============================================================================
 # Graph Construction
 # =============================================================================
@@ -207,7 +216,21 @@ def create_orchestrator_graph():
     workflow.add_edge("call_copywriter", "review_output")
     workflow.add_edge("call_visual_designer", "review_output")
 
-    workflow.add_edge("review_output", "assemble_pack")
+    def parallel_refactor_or_assemble(state: BrandFlowState):
+        feedback = state.get("review_feedback", "")
+        if feedback == "Approved":
+            return ["assemble_pack"]
+        return ["call_copywriter", "call_visual_designer"]
+
+    workflow.add_conditional_edges(
+        "review_output",
+        parallel_refactor_or_assemble,
+        {
+            "assemble_pack": "assemble_pack",
+            "call_copywriter": "call_copywriter",
+            "call_visual_designer": "call_visual_designer"
+        }
+    )
     workflow.add_edge("assemble_pack", END)
 
     # Initialize memory
