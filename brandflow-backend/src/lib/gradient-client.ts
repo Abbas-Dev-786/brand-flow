@@ -77,5 +77,6 @@ export async function generateCampaignPack(params: {
   }
 
   const result = await gradientPost(payload)
-  return ApiCampaignPackSchema.parse(result)
+  // The agent returns the pack wrapped in a "campaign_pack" key
+  return ApiCampaignPackSchema.parse(result.campaign_pack || result)
 }

@@ -27,7 +27,9 @@ export const CampaignPackSchema = z.object({
   linkedinPost: z.string(),
   email: EmailBlockSchema,
   imagePrompts: z.array(z.string()).length(3),
-  primaryImagePrompt: z.string()
+  primaryImagePrompt: z.string(),
+  primaryImageUrl: z.string().url().optional().nullable(),
+  imageUrls: z.array(z.string()).optional().default([])
 })
 
 export type BrandDNA = z.infer<typeof BrandDNASchema>
@@ -63,7 +65,9 @@ export const ApiCampaignPackSchema = z.object({
   linkedin_post: z.string(),
   email: ApiEmailBlockSchema,
   image_prompts: z.array(z.string()),
-  primary_image_prompt: z.string()
+  primary_image_prompt: z.string(),
+  primary_image_url: z.string().url().optional().nullable(),
+  image_urls: z.array(z.string()).optional().default([])
 }).transform((data): CampaignPack => ({
   brandDnaUsed: ApiBrandDNASchema.parse(data.brand_dna_used),
   xPosts: data.x_posts,
@@ -73,5 +77,7 @@ export const ApiCampaignPackSchema = z.object({
     bodyText: data.email.body_text
   },
   imagePrompts: data.image_prompts,
-  primaryImagePrompt: data.primary_image_prompt
+  primaryImagePrompt: data.primary_image_prompt,
+  primaryImageUrl: data.primary_image_url || undefined,
+  imageUrls: data.image_urls
 }))

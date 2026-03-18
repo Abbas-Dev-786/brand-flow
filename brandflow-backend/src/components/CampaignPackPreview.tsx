@@ -121,6 +121,38 @@ export function CampaignPackPreview({ pack }: { pack: CampaignPack }) {
         </TabsContent>
 
         <TabsContent value="visuals" className="space-y-8 animate-in mt-0">
+          {pack.primaryImageUrl && (
+            <Card className={`${cardStyles} border-indigo-200/50 overflow-hidden`}>
+              <div className={`${headerStyles} bg-indigo-50/20`}>
+                <span className={`${titleStyles} text-indigo-700`}>
+                  <ImageIcon className="w-4 h-4 font-bold" /> Generated Visual Asset
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => window.open(pack.primaryImageUrl!, '_blank')}
+                  className="rounded-xl font-bold bg-white/50 hover:bg-white border-white/40"
+                >
+                  View Full Size
+                </Button>
+              </div>
+              <CardContent className="p-0 flex justify-center bg-slate-100/50">
+                <div className="relative group w-full max-w-2xl aspect-square">
+                  <img 
+                    src={pack.primaryImageUrl} 
+                    alt="Campaign Asset" 
+                    className="w-full h-full object-cover shadow-2xl"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-8">
+                    <p className="text-white text-sm font-medium italic line-clamp-2">
+                       {pack.primaryImagePrompt}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card className={`${cardStyles} border-indigo-200/50`}>
             <div className={`${headerStyles} bg-indigo-50/20`}>
               <span className={`${titleStyles} text-indigo-700`}>
@@ -141,17 +173,41 @@ export function CampaignPackPreview({ pack }: { pack: CampaignPack }) {
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {pack.imagePrompts.slice(0, 3).map((prompt, i) => (
-              <div key={i} className="glass p-6 rounded-2xl flex flex-col gap-4 border-white/20 group">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Variant {i+1}</span>
-                  <Button variant="ghost" size="sm" onClick={() => copyToClipboard(prompt)} className="h-8 w-8 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Copy className="w-3.5 h-3.5" />
-                  </Button>
+            {pack.imageUrls && pack.imageUrls.length > 0 ? (
+              pack.imageUrls.map((url, i) => (
+                <div key={i} className={`${cardStyles} group`}>
+                   <div className="relative aspect-square bg-slate-100">
+                    <img src={url} alt={`Variant ${i+1}`} className="w-full h-full object-cover" />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => window.open(url, '_blank')}
+                      className="absolute top-2 right-2 h-8 w-8 p-0 rounded-full bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                  <div className="p-4">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Variant {i+1}</span>
+                    <p className="text-xs font-medium text-slate-500 italic leading-relaxed line-clamp-2 mt-2">
+                       {pack.imagePrompts[i] || "AI Image Variant"}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs font-medium text-slate-500 italic leading-relaxed line-clamp-4">{prompt}</p>
-              </div>
-            ))}
+              ))
+            ) : (
+              pack.imagePrompts.slice(0, 3).map((prompt, i) => (
+                <div key={i} className="glass p-6 rounded-2xl flex flex-col gap-4 border-white/20 group">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Variant {i+1}</span>
+                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard(prompt)} className="h-8 w-8 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Copy className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                  <p className="text-xs font-medium text-slate-500 italic leading-relaxed line-clamp-4">{prompt}</p>
+                </div>
+              ))
+            )}
           </div>
         </TabsContent>
       </Tabs>

@@ -2,7 +2,7 @@ import sys
 import os
 import logging
 import json
-from typing import TypedDict, Optional, Dict, Any
+from typing import TypedDict, Optional, Dict, Any, List, Annotated
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_gradient import ChatGradient
@@ -20,8 +20,10 @@ from gradient_adk import entrypoint
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Model configuration
+MODEL = "alibaba-qwen3-32b"
 
-from typing import TypedDict, Optional, Dict, Any, Annotated
+
 import operator
 
 # =============================================================================
@@ -40,6 +42,8 @@ class BrandFlowState(TypedDict, total=False):
 
     campaign_pack: Optional[Dict[str, Any]]
     review_feedback: Optional[str]
+    primary_image_url: Optional[str]
+    image_urls: List[str]
     error: Optional[str]
 
 
@@ -83,7 +87,9 @@ def creative_director_visual_designer_node(state: BrandFlowState) -> BrandFlowSt
         visual_block = generate_image_prompts(brand_dna, campaign)
 
         return {
-            "visual_block": visual_block.model_dump()
+            "visual_block": visual_block.model_dump(),
+            "primary_image_url": visual_block.primary_image_url,
+            "image_urls": visual_block.image_urls
         }
     except Exception as e:
         logger.error(f"[CreativeDirector] Failed calling Visual Designer: {e}")
@@ -106,7 +112,7 @@ def creative_director_assembler_node(state: BrandFlowState) -> BrandFlowState:
     logger.info("[CreativeDirector] Reviewing and assembling Campaign Pack")
 
     # Use LLM to review and construct the final struct
-    model = ChatGradient(model="llama3-8b-instruct", temperature=0.2)
+    model = ChatGradient(model=MODEL, temperature=0.2)
     structured_model = model.with_structured_output(CampaignPack)
 
     prompt = f"""
@@ -129,8 +135,13 @@ def creative_director_assembler_node(state: BrandFlowState) -> BrandFlowState:
             HumanMessage(content=prompt)
         ])
 
+        pack_dict = campaign_pack.model_dump()
+        # Ensure the generated image URL is included in the final pack
+        pack_dict["primary_image_url"] = state.get("primary_image_url")
+        pack_dict["image_urls"] = state.get("image_urls", [])
+
         return {
-            "campaign_pack": campaign_pack.model_dump()
+            "campaign_pack": pack_dict
         }
     except Exception as e:
         logger.error(f"[CreativeDirector] Failed assembling Campaign Pack with LLM: {e}")

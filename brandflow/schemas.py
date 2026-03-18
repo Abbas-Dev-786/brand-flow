@@ -78,6 +78,14 @@ class VisualBlock(BaseModel):
     primary_image_prompt: str = Field(
         description="One of the three prompts, or a refined version, chosen as the primary image prompt."
     )
+    primary_image_url: Optional[str] = Field(
+        default=None,
+        description="The URL of the primary generated image."
+    )
+    image_urls: List[str] = Field(
+        default_factory=list,
+        description="List of URLs for all generated image variants."
+    )
 
 class CampaignPack(BaseModel):
     """The final cohesive pack combining the Brand DNA, generated copy, and visual prompts."""
@@ -87,6 +95,8 @@ class CampaignPack(BaseModel):
     email: EmailCopy
     image_prompts: List[str]
     primary_image_prompt: str
+    primary_image_url: Optional[str] = None
+    image_urls: List[str] = []
 
 class ReviewResult(BaseModel):
     """Feedback from the Creative Director reviewing the team's output."""
