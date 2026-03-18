@@ -7,7 +7,7 @@ const prisma = new PrismaClient()
 const KB_PREFIX = process.env.BRANDFLOW_KB_PREFIX || 'brandflow_kb_'
 
 // Allow this route to run for up to 15 minutes (KB indexing can take ~10 min)
-export const maxDuration = 900
+export const maxDuration = 300
 export const runtime = 'nodejs'
 
 const BrandOnboardSchema = z.object({

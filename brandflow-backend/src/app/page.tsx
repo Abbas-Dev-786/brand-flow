@@ -4,7 +4,7 @@ import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Loader2, Sparkles, Wand2 } from 'lucide-react'
+import { Loader2, Sparkles, Wand2, AlertTriangle } from 'lucide-react'
 import { onboardBrand } from '@/lib/api'
 
 export default function Home() {
@@ -84,7 +84,23 @@ export default function Home() {
               )}
             </Button>
           </form>
-          
+
+          <div className="mt-6 p-4 bg-amber-50/80 border border-amber-200/60 rounded-2xl backdrop-blur-sm animate-in" style={{ animationDelay: '0.4s' }}>
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-amber-800 leading-relaxed">
+                <p className="font-bold mb-1">⚠️ Hosted Demo Limitation</p>
+                <p>
+                  Website indexing may <strong>time out</strong> on this hosted version due to serverless function limits.
+                  For the best experience, please <strong>run the app locally</strong> or use this pre-indexed dummy brand:
+                </p>
+                <p className="mt-2 font-mono text-xs bg-amber-100/60 px-3 py-1.5 rounded-lg inline-block select-all">
+                  https://www.digitalocean.com
+                </p>
+              </div>
+            </div>
+          </div>
+
           {error && (
             <div className="mt-8 p-4 bg-red-50 border border-red-100 text-red-600 text-center rounded-xl animate-in">
               <p className="font-semibold">{error}</p>
