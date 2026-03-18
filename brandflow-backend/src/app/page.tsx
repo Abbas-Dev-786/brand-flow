@@ -109,7 +109,7 @@ export default function Home() {
                   this pre-indexed dummy brand:
                 </p>
                 <p className="mt-2 font-mono text-xs bg-amber-100/60 px-3 py-1.5 rounded-lg inline-block select-all">
-                  https://brand-flow-nine.vercel.app/brand/9152c91c-8e54-4c0b-8f4c-21b34573b79e
+                  http://localhost:3000/campaign?brandId=9152c91c-8e54-4c0b-8f4c-21b34573b79e
                 </p>
               </div>
             </div>
