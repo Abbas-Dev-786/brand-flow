@@ -3,10 +3,12 @@ import { BrandDNA, CampaignInput, CampaignPack } from './schemas'
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || ''
 
 export async function onboardBrand(websiteUrl: string): Promise<{ brandId: string, brandDna: BrandDNA }> {
+  // 15-minute timeout: the backend waits for KB ingestion + indexing polling (up to 10 min) + LLM call
   const res = await fetch(`${API_BASE}/api/brand/onboard`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ websiteUrl })
+    body: JSON.stringify({ websiteUrl }),
+    signal: AbortSignal.timeout(15 * 60 * 1000),
   })
   if (!res.ok) throw new Error(await res.text())
   return res.json()
